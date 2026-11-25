@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hacker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: "Courier New", monospace; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+
+  #startScreen {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: #000; z-index: 10;
+  }
+  #startBtn {
+    background: transparent; color: #0f0; border: 2px solid #0f0;
+    padding: 18px 48px; font-size: 28px; font-family: inherit; letter-spacing: 4px;
+    cursor: pointer; text-shadow: 0 0 10px #0f0; box-shadow: 0 0 20px #0f0, inset 0 0 20px rgba(0,255,0,.2);
+    transition: .2s;
+  }
+  #startBtn:hover { background: #0f0; color: #000; text-shadow: none; }
+
+  #panel {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(560px, 90vw); padding: 28px; z-index: 5; display: none;
+    background: rgba(0, 10, 0, .85); border: 2px solid #0f0;
+    box-shadow: 0 0 30px #0f0; color: #0f0; text-align: center;
+  }
+  #status { font-size: 22px; margin-bottom: 18px; text-shadow: 0 0 8px #0f0; min-height: 30px; }
+  #percent { font-size: 64px; font-weight: bold; text-shadow: 0 0 15px #0f0; margin-bottom: 14px; }
+  #barWrap { width: 100%; height: 22px; border: 1px solid #0f0; }
+  #bar { height: 100%; width: 0%; background: #0f0; box-shadow: 0 0 12px #0f0; }
+  #log { margin-top: 16px; font-size: 14px; text-align: left; height: 20px; overflow: hidden; opacity: .8; }
+  #panel.done { border-color: #f00; box-shadow: 0 0 30px #f00; color: #f00; }
+  #panel.done #status, #panel.done #percent { text-shadow: 0 0 15px #f00; }
+  #panel.done #bar { background: #f00; box-shadow: 0 0 12px #f00; }
+  #panel.done #barWrap { border-color: #f00; }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div id="startScreen">
+  <button id="startBtn">START</button>
+</div>
+
+<div id="panel">
+  <div id="status">Bilgiler çalınıyor...</div>
+  <div id="percent">0%</div>
+  <div id="barWrap"><div id="bar"></div></div>
+  <div id="log"></div>
+</div>
+
+<script>
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  const fontSize = 18;
+  let columns, drops;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array.from({ length: columns }, () => Math.random() * -50);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let rainOn = false;
+  function draw() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (rainOn) {
+      ctx.font = fontSize + 'px "Courier New", monospace';
+      for (let i = 0; i < columns; i++) {
+        const ch = Math.random() > 0.5 ? '1' : '0';
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+        ctx.fillStyle = '#cfc';
+        ctx.fillText(ch, x, y);
+        ctx.fillStyle = '#0f0';
+        ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, y - fontSize);
+        if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+  }
+  setInterval(draw, 40);
+
+  const logs = [
+    'şifreler okunuyor...', 'kimlik bilgileri kopyalanıyor...', 'dosyalar taranıyor...',
+    'güvenlik duvarı aşılıyor...', 'veriler şifreleniyor...', 'sunucuya aktarılıyor...',
+    'oturum çerezleri alınıyor...', 'kişi listesi indiriliyor...'
+  ];
+
+  const DURATION = 60000; // 1 dakika
+  const panel = document.getElementById('panel');
+  const status = document.getElementById('status');
+  const percent = document.getElementById('percent');
+  const bar = document.getElementById('bar');
+  const log = document.getElementById('log');
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('startScreen').style.display = 'none';
+    panel.style.display = 'block';
+    rainOn = true;
+
+    const startTime = performance.now();
+    let lastLog = -1;
+
+    function tick(now) {
+      const p = Math.min(100, Math.floor(((now - startTime) / DURATION) * 100));
+      percent.textContent = p + '%';
+      bar.style.width = p + '%';
+
+      const li = Math.floor(p / 5) % logs.length;
+      if (li !== lastLog && p < 100) {
+        lastLog = li;
+        log.textContent = '> ' + logs[li];
+      }
+
+      if (p < 100) {
+        requestAnimationFrame(tick);
+      } else {
+        status.textContent = 'Bilgiler çalındı! ✔';
+        log.textContent = '> işlem tamamlandı (şaka :)';
+        panel.classList.add('done');
+      }
+    }
+    requestAnimationFrame(tick);
+  });
+</script>
+</body>
+</html>
